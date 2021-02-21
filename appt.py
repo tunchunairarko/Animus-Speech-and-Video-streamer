@@ -1,6 +1,8 @@
 from flask import Flask, render_template, Response, request, abort, jsonify
 import cv2
 from flask_restful import Resource, Api
+import os
+
 
 app = Flask (__name__)
 api = Api(app)
@@ -30,7 +32,7 @@ def index():
     if(request.method=='POST'):
         data=request.get_json()
         print(data)
-        if(data['email']=='ms414@hw.ac.uk' and data['password']=='C3):]RR[Rs$Y")'):
+        if(data['email']==os.getenv('EMAIL') and data['password']==os.getenv('PASSWORD')):
             return render_template('index.html'), 200
         else:
             Robot.camera.release()
