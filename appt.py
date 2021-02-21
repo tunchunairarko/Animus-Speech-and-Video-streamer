@@ -2,7 +2,8 @@ from flask import Flask, render_template, Response, request, abort, jsonify
 import cv2
 from flask_restful import Resource, Api
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask (__name__)
 api = Api(app)
@@ -66,4 +67,5 @@ def video_feed():
 
 
 if __name__ == '__main__':
-    app.run(debug=True,port=os.getenv('PORT'))
+    # print(os.getenv('EMAIL'))
+    app.run(debug=True,host=os.getenv('EMAIL'),port=os.getenv('PORT'))
