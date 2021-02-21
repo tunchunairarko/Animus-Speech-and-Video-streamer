@@ -1,12 +1,12 @@
 from flask import Flask, render_template, Response, request, abort, jsonify
 import cv2
-from flask_restful import Resource, Api
+from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask (__name__)
-api = Api(app)
+CORS(app)
 
 class AnimusRobot:
     def __init__(self):
@@ -41,8 +41,10 @@ def index():
             # app.route('/stop')
             # return render_template('stop.html')
     else:
-        Robot.camera.release()
-        abort(401, description="Unauthorized")
+        # Robot.camera.release()
+        # abort(401, description="Unauthorized")
+        Robot.camera = cv2.VideoCapture(0)
+        return render_template('index.html'), 200
 
 @app.errorhandler(401)
 def resource_not_found(e):
@@ -62,6 +64,7 @@ def start():
 @app.route('/video_feed')
 def video_feed():
     #Video streaming route. Put this in the src attribute of an img tag
+    Robot.camera = cv2.VideoCapture(0)
     return Response(Robot.gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
