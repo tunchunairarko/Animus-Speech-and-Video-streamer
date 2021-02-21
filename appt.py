@@ -68,4 +68,4 @@ def video_feed():
 
 if __name__ == '__main__':
     # print(os.getenv('EMAIL'))
-    app.run(debug=True,host=os.getenv('EMAIL'),port=os.getenv('PORT'))
+    app.run(debug=True,host=os.getenv('HOST'),port=os.getenv('PORT'))
