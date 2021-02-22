@@ -10,8 +10,21 @@ CORS(app)
 
 class AnimusRobot:
     def __init__(self):
+        self.cameraArr=self.getAndStartCamera()
+        print(self.cameraArr)
         self.camera = cv2.VideoCapture(0)
-
+    def getAndStartCamera(self):
+        index = 0
+        arr = []
+        while True:
+            cap = cv2.VideoCapture(index)
+            if not cap.read()[0]:
+                break
+            else:
+                arr.append(index)
+            cap.release()
+            index += 1
+        return arr
     def gen_frames(self):  # generate frame by frame from camera
         while True:
             # Capture frame-by-frame
