@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 sio = socketio.Client()
-sio.connect('http://localhost:5000')
+sio.connect('http://localhost:9000')
 if(sio.connected):
     print("*****************YES*****************")
 else:
@@ -32,6 +32,15 @@ class AnimusRobot:
         self.videoImgSrc=''
         self.getRobot()
         self.openModalities()
+        self.utils = utils
+        self.prev_motor_dict = utils.get_motor_dict()
+        self.head_motion_counter = {
+            'head_up_down': 0,  # -head_angle_threshold,head_angle_threshold
+            'head_left_right': 0,  # -head_angle_threshold,head_angle_threshold
+            'head_roll': 0
+        }
+        self.head_angle_incrementer = 1.5
+        self.head_angle_threshold = 75
         # self.getVideofeed()
         self.thread=threading.Thread(target=self.gen_frames)
         
@@ -65,11 +74,19 @@ class AnimusRobot:
         if not open_success:
             self.log.error("Could not open robot motor modality")
             # sys.exit(-1)
+        open_success = self.myrobot.open_modality("speech")
+        if not open_success:
+            self.log.error("Could not open robot speech modality")
+            # sys.exit(-1)
+        open_success = self.myrobot.open_modality("emotion")
+        if not open_success:
+            self.log.error("Could not open robot speech modality")
+            # sys.exit(-1)
     def getRobot(self):
         for i in range(10):
             
             self.log.info(animus.version())
-            print(animus.version())
+            # print(animus.version())
             audio_params = utils.AudioParams(
                         Backends=["notinternal"],
                         SampleRate=16000,
@@ -91,7 +108,7 @@ class AnimusRobot:
                 continue
 
             get_robots_result = animus.get_robots(True, True, False)
-            print(get_robots_result)
+            # print(get_robots_result)
             if not get_robots_result.localSearchError.success:
                 self.log.error(get_robots_result.localSearchError.description)
 
@@ -120,7 +137,7 @@ class AnimusRobot:
     def gen_frames(self):  # generate frame by frame from camera
         while True:
             image_list, err = self.myrobot.get_modality("vision", True)
-            print(len(image_list))
+            # print(len(image_list))
             if err.success:
                 # sio.emit('pythondata', str(image_list[0].image))                      # send to server
                 ret, buffer = cv2.imencode('.jpg', image_list[0].image)
@@ -143,7 +160,7 @@ def index():
     """Video streaming home page."""
     if(request.method=='POST'):
         data=request.get_json()
-        print(data)
+        # print(data)
         if(data['email']==os.getenv('EMAIL') and data['password']==os.getenv('PASSWORD')):
             return render_template('index.html'), 200
         else:
@@ -182,59 +199,83 @@ def video_feed():
 def connect():
     print('connected to server')
 
-
 @sio.event
 def disconnect():
     print('disconnected from server')
 
 @sio.on('FROMNODEAPI')
 def frontenddata(data):
-    key=str(data)
-    print(key)
-    motorDict = utils.get_motor_dict()
-    list_of_motions = [motorDict.copy()]
-    if(key=='up'):
-        motorDict["head_up_down"] = 4 * utils.HEAD_UP
-        motorDict["body_forward"] = 0.0
-        motorDict["body_sideways"] = 0.0
-        motorDict["body_rotate"] = 0.0
-        list_of_motions.append(motorDict.copy())
-    elif(key=='down'):
-        motorDict["head_up_down"] = 4 * utils.HEAD_DOWN
-        motorDict["body_forward"] = 0.0
-        motorDict["body_sideways"] = 0.0
-        motorDict["body_rotate"] = 0.0
-        list_of_motions.append(motorDict.copy())
-    elif(key=='left'):
-        motorDict["head_left_right"] = 5 * utils.HEAD_LEFT
-        motorDict["body_forward"] = 0.0
-        motorDict["body_sideways"] = 0.0
-        motorDict["body_rotate"] = 0.0
-        list_of_motions.append(motorDict.copy())
-    elif(key=='right'):
-        motorDict["head_left_right"] = 5 * utils.HEAD_RIGHT
-        motorDict["body_forward"] = 0.0
-        motorDict["body_sideways"] = 0.0
-        motorDict["body_rotate"] = 0.0
-        list_of_motions.append(motorDict.copy())
-    for motion_counter in range(len(list_of_motions)):
-        ret = Robot.myrobot.set_modality("motor", list(list_of_motions[motion_counter].values()))
-    # time.sleep(2)
-    
-    # motorDict["head_left_right"] = var * utils.HEAD_RIGHT
-        
-    # list_of_motions.append(motorDict.copy())
-    # for motion_counter in range(len(list_of_motions)):
-    #     ret = Robot.myrobot.set_modality("motor", list(list_of_motions[motion_counter].values()))
-    #     time.sleep(0.1)
-    # var=var+3
-    
-    # motorDict = utils.get_motor_dict()
-    # list_of_motions = [motorDict.copy()]
-    # motorDict[key]=value
-    # list_of_motions.append(motorDict.copy())
-    # for motion_counter in len(range(list_of_motions)):
-    #     ret = Robot.myrobot.set_modality("motor", list(list_of_motions[motion_counter].values()))
+    if not (Robot.myrobot == None):
+        key = str(data)
+        print(key)
+        # list_of_motions=[]
+        # motorDict = Robot.utils.get_motor_dict()
+        # list_of_motions = [motorDict.copy()]
+        if(key == 'head_up'):
+            if not (Robot.head_motion_counter['head_up_down'] == Robot.head_angle_threshold):
+                Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] + \
+                    Robot.head_angle_incrementer
+                Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
+
+        elif(key == 'head_down'):
+            if not (Robot.head_motion_counter['head_up_down'] == -1*Robot.head_angle_threshold):
+                Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] - \
+                    Robot.head_angle_incrementer
+                Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
+
+        elif(key == 'head_left'):
+            if not (Robot.head_motion_counter['head_left_right'] == -1*Robot.head_angle_threshold):
+                Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] - \
+                    Robot.head_angle_incrementer
+                Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
+
+        elif(key == 'head_right'):
+            if not (Robot.head_motion_counter['head_left_right'] == Robot.head_angle_threshold):
+                Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] + \
+                    Robot.head_angle_incrementer
+                Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
+
+        elif(key == 'rotate_left'):
+            Robot.prev_motor_dict["body_rotate"] = 15.0
+
+        elif(key == 'rotate_right'):
+            Robot.prev_motor_dict["body_rotate"] = -15.0
+
+        elif(key == 'nullmotion'):
+            Robot.prev_motor_dict["body_forward"] = 0.0
+            Robot.prev_motor_dict["body_sideways"] = 0.0
+            Robot.prev_motor_dict["body_rotate"] = 0.0
+
+        elif(key == 'forward'):
+            Robot.prev_motor_dict["body_forward"] = 1.0
+
+        elif(key == 'left'):
+            Robot.prev_motor_dict["body_sideways"] = -1.0
+
+        elif(key == 'right'):
+            Robot.prev_motor_dict["body_sideways"] = 1.0
+
+        ret = Robot.myrobot.set_modality(
+            "motor", list(Robot.prev_motor_dict.values()))
+
+        # for motion_counter in range(len(list_of_motions)):
+        #     ret = Robot.myrobot.set_modality("motor", list(list_of_motions[motion_counter].values()))
+@sio.on('FROMNODESPEECHAPI')
+def frontendspeechdata(data):
+    if not (Robot.myrobot == None):
+        speech = str(data)
+        print(speech)
+        if not(speech.lower().find("oh,")==-1):
+            Robot.myrobot.set_modality("emotion", "surprised")
+        elif(speech.lower().find("reading?")==-1):
+            Robot.myrobot.set_modality("emotion", "neutral")
+        elif(speech.lower().find("thank you for your patience")==-1):
+            Robot.myrobot.set_modality("emotion", "happy")
+        ret = Robot.myrobot.set_modality(
+            "speech", speech)
+
+        # for motion_counter in range(len(list_of_motions)):
+        #     ret = Robot.myrobot.set_modality("motor", list(list_of_motions[motion_counter].values()))
 
 if __name__ == '__main__':
     # print(os.getenv('EMAIL'))

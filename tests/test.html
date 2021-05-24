@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+  <title>Document</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    .container {
+      max-width: 520px;
+      max-height: 180px;
+      background-color: antiquewhite;
+    }
+    
+    fieldset {
+      max-width: 518px;
+      max-height: 178px;
+      padding-right: 15px;
+      padding-left: 15px;
+    }
+    .btn{
+        font-weight:600;
+        color:#fff;
+        text-align:center;
+        vertical-align:middle;
+        border:1px solid transparent;
+        font-size:1.2rem;
+        line-height:1.5;
+    }
+    .btn-primary {
+  color: #fff;
+  background-color: #1172f4;
+  border-color: #000000;
+}
+.btn-primary:hover {
+  color: #fff;
+  background-color:#1172f4;
+  border-color: black;
+}
+.btn-primary:focus{
+  color: #fff;
+  background-color:#1172f4;
+  border-color: #1875f6;
+  box-shadow: 0 0 0 0.2rem rgba(38, 38, 38, 0.5);
+}
+
+.btn:focus{
+  box-shadow: none!important;
+
+}
+
+
+
+
+    /*.form-group{
+        max-width:518px;
+        
+    }*/
+  </style>
+
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+
+      <div class="col-sm-6 form-box">
+
+        <form role="form" action method="post" class="registration-form" style="width:482px;height:175px;background-color:aqua;margin-left:5px;margin-right:5px;padding-left: 20px;padding-right: 20px;">
+
+          <fieldset>
+            <!--Start 2nd form field set-->
+            <div class="form-bottom">
+              <div class="form-group" style="margin-top:20px;width:100%;">
+
+                <input type="text" name="form-email" placeholder="Enter Your email" class="form-email form-control" id="form-email">
+              </div>
+              <!--End of 2nd form groupdiv-->
+
+              <button type="button" class="btn btn-primary btn-next" style="margin-top:20px;margin-bottom:20px;padding-right:15px;width:100%;">Get Started</button>
+            </div>
+            <!--End of bottom div-->
+
+          </fieldset>
+          <!--End of second form fieldset-->
+        </form>
+
+</body>
+
+</html>

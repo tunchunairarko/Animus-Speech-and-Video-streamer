@@ -1,0 +1,160 @@
+{
+    "robots": [
+        {
+            "robotId": "e411c463-f29e-11ea-a6f7-0242ac1e0009",
+            "make": "Softbank",
+            "model": "Pepper",
+            "name": "Pepper",
+            "license": {
+                "licenseId": "1f0affbc-f29b-11ea-b2a7-0242ac1e0007",
+                "startDate": "1599655864",
+                "duration": "31536000",
+                "endDate": "1631191864"
+            },
+            "joinDate": "1599657483",
+            "robotConfig": {
+                "enableRemote": true,
+                "inputModalities": [
+                    "emotion",
+                    "motor",
+                    "speech",
+                    "voice"
+                ],
+                "outputModalities": [
+                    "audition",
+                    "haptic",
+                    "vision"
+                ],
+                "internalModalities": [
+                    "audition",
+                    "voice"
+                ],
+                "StrAudioParams": {
+                    "Backends": [
+                        "alsa"
+                    ],
+                    "SampleRate": 16000,
+                    "Channels": 1,
+                    "SizeInFrames": true,
+                    "TransmitRate": 30
+                }
+            },
+            "robotState": {
+                "location": {
+                    "ip": "137.195.86.140",
+                    "city": "Currie",
+                    "region": "Scotland",
+                    "country": "GB",
+                    "loc": "55.8964,-3.3085",
+                    "postal": "EH14",
+                    "org": "AS786 Jisc Services Limited"
+                },
+                "NetworkMode": "remote"
+            }
+        },
+        {
+            "robotId": "bbe6cb52-fd85-11ea-9a8b-0242ac1e000a",
+            "make": "Consequential Robotics",
+            "model": "MiroE",
+            "name": "Miro",
+            "license": {
+                "licenseId": "e3eaf0aa-fd08-11ea-8b71-0242ac1e0012",
+                "startDate": "1600802521",
+                "duration": "31536000",
+                "endDate": "1632338521"
+            },
+            "joinDate": "1600856141",
+            "robotConfig": {
+                "enableRemote": true,
+                "inputModalities": [
+                    "emotion",
+                    "motor",
+                    "voice"
+                ],
+                "outputModalities": [
+                    "audition",
+                    "vision"
+                ],
+                "StrAudioParams": {
+                    "Backends": [
+                        "notinternal"
+                    ],
+                    "SampleRate": 20000,
+                    "Channels": 1,
+                    "SizeInFrames": true,
+                    "TransmitRate": 20
+                }
+            },
+            "robotState": {
+                "location": {
+                    "ip": "137.195.86.140",
+                    "city": "Currie",
+                    "region": "Scotland",
+                    "country": "GB",
+                    "loc": "55.8964,-3.3085",
+                    "postal": "EH14",
+                    "org": "AS786 Jisc Services Limited"
+                },
+                "NetworkMode": "remote"
+            }
+        },
+        {
+            "robotId": "fd6189a3-f27e-11ea-99ff-0242ac1e0009",
+            "make": "Softbank",
+            "model": "Pepper",
+            "name": "CyberAgnetha",
+            "license": {
+                "licenseId": "54f0e2a8-f27d-11ea-90dd-0242ac1e0007",
+                "startDate": "1599643069",
+                "duration": "31536000",
+                "endDate": "1631179069"
+            },
+            "joinDate": "1599643781",
+            "robotConfig": {
+                "enableRemote": true,
+                "inputModalities": [
+                    "emotion",
+                    "motor",
+                    "speech",
+                    "voice"
+                ],
+                "outputModalities": [
+                    "audition",
+                    "haptic",
+                    "proprioception",
+                    "vision"
+                ],
+                "internalModalities": [
+                    "audition",
+                    "voice"
+                ],
+                "StrAudioParams": {
+                    "Backends": [
+                        "alsa"
+                    ],
+                    "SampleRate": 16000,
+                    "Channels": 1,
+                    "SizeInFrames": true,
+                    "TransmitRate": 30
+                }
+            },
+            "robotState": {
+                "available": true,
+                "location": {
+                    "ip": "143.167.48.153",
+                    "hostname": "dyn048153.shef.ac.uk",
+                    "city": "Sheffield",
+                    "region": "England",
+                    "country": "GB",
+                    "loc": "53.3830,-1.4659",
+                    "postal": "S1",
+                    "org": "AS786 Jisc Services Limited"
+                },
+                "NetworkMode": "remote"
+            }
+        }
+    ],
+    "remoteSearchError": {
+        "success": true
+    }
+}
