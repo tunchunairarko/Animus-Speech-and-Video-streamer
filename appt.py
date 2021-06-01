@@ -273,6 +273,7 @@ def frontendspeechdata(data):
             Robot.myrobot.set_modality("emotion", "happy")
         ret = Robot.myrobot.set_modality(
             "speech", speech)
+        #pychace
 
         # for motion_counter in range(len(list_of_motions)):
         #     ret = Robot.myrobot.set_modality("motor", list(list_of_motions[motion_counter].values()))
