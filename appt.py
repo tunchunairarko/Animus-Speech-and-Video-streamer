@@ -7,7 +7,7 @@ import animus_utils as utils
 import sys
 import logging
 import numpy as np
-import random
+import datetime
 import time
 import threading
 import socketio
@@ -33,6 +33,7 @@ class AnimusRobot:
         self.getRobot()
         self.openModalities()
         self.utils = utils
+        self.prevTime = 0
         self.prev_motor_dict = utils.get_motor_dict()
         self.head_motion_counter = {
             'head_up_down': 0,  # -head_angle_threshold,head_angle_threshold
@@ -43,25 +44,6 @@ class AnimusRobot:
         self.head_angle_threshold = 75
         # self.getVideofeed()
         self.thread=threading.Thread(target=self.gen_frames)
-        
-    # def getVideofeed(self):
-    #     image_list, err = self.myrobot.get_modality("vision", True)
-    #     print(len(image_list))
-    #     if err.success:
-    #         # sio.emit('pythondata', str(image_list[0].image))                      # send to server
-    #         ret, buffer = cv2.imencode('.jpg', image_list[0].image)
-    #         frame = buffer.tobytes()
-
-    #         self.videoImgSrc=b'--frame\r\n Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n'
-        # while True:
-        #     image_list, err = self.myrobot.get_modality("vision", True)
-        #     print(len(image_list))
-        #     if err.success:
-        #         # sio.emit('pythondata', str(image_list[0].image))                      # send to server
-        #         ret, buffer = cv2.imencode('.jpg', image_list[0].image)
-        #         frame = buffer.tobytes()
-
-        #         self.videoImgSrc=b'--frame\r\n Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n'
 
                 
     def openModalities(self):
@@ -135,12 +117,17 @@ class AnimusRobot:
 
             
     def gen_frames(self):  # generate frame by frame from camera
+        if(self.prevTime==0):
+            self.prevTime=datetime.datetime.now()
         while True:
             image_list, err = self.myrobot.get_modality("vision", True)
             # print(len(image_list))
             if err.success:
                 # sio.emit('pythondata', str(image_list[0].image))                      # send to server
                 ret, buffer = cv2.imencode('.jpg', image_list[0].image)
+                curTime=datetime.datetime.now()
+                sio.emit("ANIMUSFPS",curTime-self.prevTime)
+                self.prevTime=curTime
                 frame = buffer.tobytes()
                 yield (b'--frame\r\n'
                     b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
