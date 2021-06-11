@@ -11,6 +11,7 @@ import datetime
 import time
 import threading
 import socketio
+import math
 stopFlag = False
 from dotenv import load_dotenv
 load_dotenv()
@@ -40,8 +41,9 @@ class AnimusRobot:
             'head_left_right': 0,  # -head_angle_threshold,head_angle_threshold
             'head_roll': 0
         }
-        self.head_angle_incrementer = 1.5
-        self.head_angle_threshold = 75
+        self.head_angle_incrementer = 5
+        self.head_angle_threshold = 90
+        self.body_rotation_speed=0.5
         # self.getVideofeed()
         self.thread=threading.Thread(target=self.gen_frames)
 
@@ -114,19 +116,74 @@ class AnimusRobot:
                 continue
             else:
                 break
+    
+    def apply_mask(self,matrix, mask, fill_value):
+        masked = np.ma.array(matrix, mask=mask, fill_value=fill_value)
+        return masked.filled()
 
+    def apply_threshold(self,matrix, low_value, high_value):
+        low_mask = matrix < low_value
+        matrix = self.apply_mask(matrix, low_mask, low_value)
+
+        high_mask = matrix > high_value
+        matrix = self.apply_mask(matrix, high_mask, high_value)
+
+        return matrix
+
+    def color_balance(self,img, percent):
+        assert img.shape[2] == 3
+        assert percent > 0 and percent < 100
+
+        half_percent = percent / 200.0
+
+        channels = cv2.split(img)
+
+        out_channels = []
+        for channel in channels:
+            assert len(channel.shape) == 2
+            # find the low and high precentile values (based on the input percentile)
+            height, width = channel.shape
+            vec_size = width * height
+            flat = channel.reshape(vec_size)
+
+            assert len(flat.shape) == 1
+
+            flat = np.sort(flat)
+
+            n_cols = flat.shape[0]
+
+            low_val  = flat[math.floor(n_cols * half_percent)]
+            high_val = flat[math.ceil( n_cols * (1.0 - half_percent))]
+
+            # print "Lowval: ", low_val
+            # print "Highval: ", high_val
+
+            # saturate below the low percentile and above the high percentile
+            thresholded = self.apply_threshold(channel, low_val, high_val)
+            # scale the channel
+            normalized = cv2.normalize(thresholded, thresholded.copy(), 0, 255, cv2.NORM_MINMAX)
+            out_channels.append(normalized)
+
+        return cv2.merge(out_channels)
             
     def gen_frames(self):  # generate frame by frame from camera
         if(self.prevTime==0):
             self.prevTime=datetime.datetime.now()
         while True:
-            image_list, err = self.myrobot.get_modality("vision", True)
+            try:
+                image_list, err = self.myrobot.get_modality("vision", True)
+            except:
+                continue
+            # image_list, err = self.myrobot.get_modality("vision", True)
             # print(len(image_list))
             if err.success:
                 # sio.emit('pythondata', str(image_list[0].image))                      # send to server
-                ret, buffer = cv2.imencode('.jpg', image_list[0].image)
+                clear_img=self.color_balance(image_list[0].image,1)
+                clear_img=image_list[0].image
+
+                ret, buffer = cv2.imencode('.jpg', clear_img)
                 curTime=datetime.datetime.now()
-                sio.emit("ANIMUSFPS",curTime-self.prevTime)
+                sio.emit("ANIMUSFPS",str(curTime-self.prevTime))
                 self.prevTime=curTime
                 frame = buffer.tobytes()
                 yield (b'--frame\r\n'
@@ -190,6 +247,40 @@ def connect():
 def disconnect():
     print('disconnected from server')
 
+def resetRobotHead():
+    Robot.prev_motor_dict["head_up_down"]=0
+    Robot.head_motion_counter['head_up_down']=0
+    Robot.head_motion_counter['head_left_right']=0
+    Robot.prev_motor_dict["head_left_right"]=0
+    Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+
+    # if(Robot.prev_motor_dict['head_up_down']>0):
+    #     for i in range(abs(Robot.head_motion_counter['head_up_down'])):
+    #         Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] - 1
+    #         Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
+    #         ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+    #         time.sleep(0.02)
+    #     # Robot.prev_motor_dict['head_up_down']=0
+    # elif(Robot.prev_motor_dict['head_up_down']<0):
+    #     for i in range(abs(Robot.head_motion_counter['head_up_down'])):
+    #         Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] + 1
+    #         Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
+    #         ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+    #         time.sleep(0.02)
+    # if(Robot.prev_motor_dict['head_left_right']>0):
+    #     for i in range(abs(Robot.head_motion_counter['head_left_right'])):
+    #         Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] - 1
+    #         Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
+    #         ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+    #         time.sleep(0.02)
+    #     # Robot.prev_motor_dict['head_up_down']=0
+    # elif(Robot.prev_motor_dict['head_left_right']<0):
+    #     for i in range(abs(Robot.head_motion_counter['head_left_right'])):
+    #         Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] + 1
+    #         Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
+    #         ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+    #         time.sleep(0.02)
+
 @sio.on('FROMNODEAPI')
 def frontenddata(data):
     if not (Robot.myrobot == None):
@@ -200,50 +291,68 @@ def frontenddata(data):
         # list_of_motions = [motorDict.copy()]
         if(key == 'head_up'):
             if not (Robot.head_motion_counter['head_up_down'] == Robot.head_angle_threshold):
-                Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] + \
-                    Robot.head_angle_incrementer
-                Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
-
+                for i in range(Robot.head_angle_incrementer):
+                    Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] + 1
+                    Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
+                    ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+                    time.sleep(0.05)
         elif(key == 'head_down'):
             if not (Robot.head_motion_counter['head_up_down'] == -1*Robot.head_angle_threshold):
-                Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] - \
-                    Robot.head_angle_incrementer
-                Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
-
+                for i in range(Robot.head_angle_incrementer):
+                    Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] - 1
+                    Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
+                    ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+                    time.sleep(0.05)
+        
         elif(key == 'head_left'):
             if not (Robot.head_motion_counter['head_left_right'] == -1*Robot.head_angle_threshold):
-                Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] - \
-                    Robot.head_angle_incrementer
-                Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
+                for i in range(Robot.head_angle_incrementer):
+                    Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] - 1
+                    Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
+                    ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+                    time.sleep(0.05)
 
         elif(key == 'head_right'):
             if not (Robot.head_motion_counter['head_left_right'] == Robot.head_angle_threshold):
-                Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] + \
-                    Robot.head_angle_incrementer
-                Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
+                for i in range(Robot.head_angle_incrementer):
+                    Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] + 1
+                    Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
+                    ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+                    time.sleep(0.05)
 
         elif(key == 'rotate_left'):
-            Robot.prev_motor_dict["body_rotate"] = 15.0
+            resetRobotHead()
+            Robot.prev_motor_dict["body_rotate"] = Robot.body_rotation_speed
+            ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
 
         elif(key == 'rotate_right'):
-            Robot.prev_motor_dict["body_rotate"] = -15.0
+            resetRobotHead()
+            Robot.prev_motor_dict["body_rotate"] = -Robot.body_rotation_speed
+            ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
 
         elif(key == 'nullmotion'):
             Robot.prev_motor_dict["body_forward"] = 0.0
             Robot.prev_motor_dict["body_sideways"] = 0.0
             Robot.prev_motor_dict["body_rotate"] = 0.0
+            ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
 
         elif(key == 'forward'):
+            resetRobotHead()
+            
             Robot.prev_motor_dict["body_forward"] = 1.0
+            ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
 
         elif(key == 'left'):
+            resetRobotHead()
             Robot.prev_motor_dict["body_sideways"] = -1.0
+            ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
 
         elif(key == 'right'):
+            resetRobotHead()
             Robot.prev_motor_dict["body_sideways"] = 1.0
+            ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
 
-        ret = Robot.myrobot.set_modality(
-            "motor", list(Robot.prev_motor_dict.values()))
+        # ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
 
         # for motion_counter in range(len(list_of_motions)):
         #     ret = Robot.myrobot.set_modality("motor", list(list_of_motions[motion_counter].values()))
