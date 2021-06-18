@@ -18,10 +18,10 @@ load_dotenv()
 
 sio = socketio.Client()
 sio.connect('http://localhost:9000')
-if(sio.connected):
-    print("*****************YES*****************")
-else:
-    print("*****************NO*******************")    
+# if(sio.connected):
+#     print("*****************YES*****************")
+# else:
+#     print("*****************NO*******************")    
 
 app = Flask (__name__)
 CORS(app)
@@ -43,7 +43,7 @@ class AnimusRobot:
         }
         self.head_angle_incrementer = 5
         self.head_angle_threshold = 90
-        self.body_rotation_speed=0.5
+        self.body_rotation_speed=3
         # self.getVideofeed()
         self.thread=threading.Thread(target=self.gen_frames)
 
@@ -167,8 +167,8 @@ class AnimusRobot:
         return cv2.merge(out_channels)
             
     def gen_frames(self):  # generate frame by frame from camera
-        if(self.prevTime==0):
-            self.prevTime=datetime.datetime.now()
+        # if(self.prevTime==0):
+        #     self.prevTime=datetime.datetime.now()
         while True:
             try:
                 image_list, err = self.myrobot.get_modality("vision", True)
@@ -178,13 +178,12 @@ class AnimusRobot:
             # print(len(image_list))
             if err.success:
                 # sio.emit('pythondata', str(image_list[0].image))                      # send to server
-                clear_img=self.color_balance(image_list[0].image,1)
+                # clear_img=self.color_balance(image_list[0].image,1)
                 clear_img=image_list[0].image
-
                 ret, buffer = cv2.imencode('.jpg', clear_img)
-                curTime=datetime.datetime.now()
-                sio.emit("ANIMUSFPS",str(curTime-self.prevTime))
-                self.prevTime=curTime
+                # curTime=datetime.datetime.now()
+                # sio.emit("ANIMUSFPS",str(curTime-self.prevTime))
+                # self.prevTime=curTime
                 frame = buffer.tobytes()
                 yield (b'--frame\r\n'
                     b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
@@ -295,14 +294,16 @@ def frontenddata(data):
                     Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] + 1
                     Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
                     ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-                    time.sleep(0.05)
+                    time.sleep(0.02)
+                sio.emit("sendHeadMovement","up")
         elif(key == 'head_down'):
             if not (Robot.head_motion_counter['head_up_down'] == -1*Robot.head_angle_threshold):
                 for i in range(Robot.head_angle_incrementer):
                     Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] - 1
                     Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
                     ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-                    time.sleep(0.05)
+                    time.sleep(0.02)
+                sio.emit("sendHeadMovement","down")
         
         elif(key == 'head_left'):
             if not (Robot.head_motion_counter['head_left_right'] == -1*Robot.head_angle_threshold):
@@ -310,7 +311,8 @@ def frontenddata(data):
                     Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] - 1
                     Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
                     ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-                    time.sleep(0.05)
+                    time.sleep(0.02)
+                sio.emit("sendHeadMovement","left")
 
         elif(key == 'head_right'):
             if not (Robot.head_motion_counter['head_left_right'] == Robot.head_angle_threshold):
@@ -318,39 +320,52 @@ def frontenddata(data):
                     Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] + 1
                     Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
                     ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-                    time.sleep(0.05)
+                    time.sleep(0.02)
+                sio.emit("sendHeadMovement","right")
 
         elif(key == 'rotate_left'):
             resetRobotHead()
             Robot.prev_motor_dict["body_rotate"] = Robot.body_rotation_speed
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+            sio.emit("sendHeadMovement","reset")
 
         elif(key == 'rotate_right'):
             resetRobotHead()
             Robot.prev_motor_dict["body_rotate"] = -Robot.body_rotation_speed
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+            sio.emit("sendHeadMovement","reset")
 
         elif(key == 'nullmotion'):
             Robot.prev_motor_dict["body_forward"] = 0.0
             Robot.prev_motor_dict["body_sideways"] = 0.0
             Robot.prev_motor_dict["body_rotate"] = 0.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+            sio.emit("sendHeadMovement","reset")
 
         elif(key == 'forward'):
             resetRobotHead()
             
             Robot.prev_motor_dict["body_forward"] = 1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+            sio.emit("sendHeadMovement","reset")
 
         elif(key == 'left'):
             resetRobotHead()
-            Robot.prev_motor_dict["body_sideways"] = -1.0
+            Robot.prev_motor_dict["body_sideways"] = 1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+            sio.emit("sendHeadMovement","reset")
+        
+        elif(key == 'back'):
+            resetRobotHead()
+            Robot.prev_motor_dict["body_forward"] = -1.0
+            ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+            sio.emit("sendHeadMovement","reset")
 
         elif(key == 'right'):
             resetRobotHead()
-            Robot.prev_motor_dict["body_sideways"] = 1.0
+            Robot.prev_motor_dict["body_sideways"] = -1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
+            sio.emit("sendHeadMovement","reset")
 
         # ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
 
