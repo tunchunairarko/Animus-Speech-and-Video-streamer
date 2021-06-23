@@ -1,3 +1,3 @@
 @ECHO OFF
-py "server.py"
+py "appt.py"
 pause

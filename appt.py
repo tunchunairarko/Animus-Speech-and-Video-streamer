@@ -169,28 +169,41 @@ class AnimusRobot:
     def gen_frames(self):  # generate frame by frame from camera
         # if(self.prevTime==0):
         #     self.prevTime=datetime.datetime.now()
-        while True:
-            try:
-                image_list, err = self.myrobot.get_modality("vision", True)
-            except:
-                continue
-            # image_list, err = self.myrobot.get_modality("vision", True)
-            # print(len(image_list))
-            if err.success:
-                # sio.emit('pythondata', str(image_list[0].image))                      # send to server
-                # clear_img=self.color_balance(image_list[0].image,1)
-                clear_img=image_list[0].image
-                ret, buffer = cv2.imencode('.jpg', clear_img)
-                # curTime=datetime.datetime.now()
-                # sio.emit("ANIMUSFPS",str(curTime-self.prevTime))
-                # self.prevTime=curTime
-                frame = buffer.tobytes()
-                yield (b'--frame\r\n'
-                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
+        try:
+            while True:
+                try:
+                    image_list, err = self.myrobot.get_modality("vision", True)
+                except:
+                    continue
+                # image_list, err = self.myrobot.get_modality("vision", True)
+                # print(len(image_list))
+                if err.success:
+                    # sio.emit('pythondata', str(image_list[0].image))                      # send to server
+                    # clear_img=self.color_balance(image_list[0].image,1)
+                    clear_img=image_list[0].image
+                    ret, buffer = cv2.imencode('.jpg', clear_img)
+                    # curTime=datetime.datetime.now()
+                    # sio.emit("ANIMUSFPS",str(curTime-self.prevTime))
+                    # self.prevTime=curTime
+                    frame = buffer.tobytes()
+                    yield (b'--frame\r\n'
+                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
             # frame = buffer.tobytes()
 
             # self.videoImgSrc=b'--frame\r\n Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n'
             # yield(self.videoImgSrc)
+        except KeyboardInterrupt:
+            cv2.destroyAllWindows()
+            self.log.info("Closing down")
+            self.myrobot.disconnect()
+            animus.close_client_interface()
+            sys.exit(-1)
+        except SystemExit:
+            cv2.destroyAllWindows()
+            self.log.info("Closing down")
+            self.myrobot.disconnect()
+            animus.close_client_interface()
+            sys.exit(-1)
                 
     def closeRobot(self):
         self.myrobot.disconnect()
