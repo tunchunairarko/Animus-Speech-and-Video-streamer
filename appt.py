@@ -308,7 +308,7 @@ def frontenddata(data):
                     Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
                     ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
                     time.sleep(0.02)
-                sio.emit("sendHeadMovement","up")
+                # sio.emit("sendHeadMovement","up")
         elif(key == 'head_down'):
             if not (Robot.head_motion_counter['head_up_down'] == -1*Robot.head_angle_threshold):
                 for i in range(Robot.head_angle_incrementer):
@@ -316,7 +316,7 @@ def frontenddata(data):
                     Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
                     ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
                     time.sleep(0.02)
-                sio.emit("sendHeadMovement","down")
+                # sio.emit("sendHeadMovement","down")
         
         elif(key == 'head_left'):
             if not (Robot.head_motion_counter['head_left_right'] == -1*Robot.head_angle_threshold):
@@ -325,7 +325,7 @@ def frontenddata(data):
                     Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
                     ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
                     time.sleep(0.02)
-                sio.emit("sendHeadMovement","left")
+                # sio.emit("sendHeadMovement","left")
 
         elif(key == 'head_right'):
             if not (Robot.head_motion_counter['head_left_right'] == Robot.head_angle_threshold):
@@ -334,51 +334,51 @@ def frontenddata(data):
                     Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
                     ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
                     time.sleep(0.02)
-                sio.emit("sendHeadMovement","right")
+                # sio.emit("sendHeadMovement","right")
 
         elif(key == 'rotate_left'):
             resetRobotHead()
             Robot.prev_motor_dict["body_rotate"] = Robot.body_rotation_speed
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-            sio.emit("sendHeadMovement","reset")
+            # sio.emit("sendHeadMovement","reset")
 
         elif(key == 'rotate_right'):
             resetRobotHead()
             Robot.prev_motor_dict["body_rotate"] = -Robot.body_rotation_speed
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-            sio.emit("sendHeadMovement","reset")
+            # sio.emit("sendHeadMovement","reset")
 
         elif(key == 'nullmotion'):
             Robot.prev_motor_dict["body_forward"] = 0.0
             Robot.prev_motor_dict["body_sideways"] = 0.0
             Robot.prev_motor_dict["body_rotate"] = 0.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-            sio.emit("sendHeadMovement","reset")
+            # sio.emit("sendHeadMovement","reset")
 
         elif(key == 'forward'):
             resetRobotHead()
             
             Robot.prev_motor_dict["body_forward"] = 1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-            sio.emit("sendHeadMovement","reset")
+            # sio.emit("sendHeadMovement","reset")
 
         elif(key == 'left'):
             resetRobotHead()
             Robot.prev_motor_dict["body_sideways"] = 1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-            sio.emit("sendHeadMovement","reset")
+            # sio.emit("sendHeadMovement","reset")
         
         elif(key == 'back'):
             resetRobotHead()
             Robot.prev_motor_dict["body_forward"] = -1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-            sio.emit("sendHeadMovement","reset")
+            # sio.emit("sendHeadMovement","reset")
 
         elif(key == 'right'):
             resetRobotHead()
             Robot.prev_motor_dict["body_sideways"] = -1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-            sio.emit("sendHeadMovement","reset")
+            # sio.emit("sendHeadMovement","reset")
 
         # ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
 
