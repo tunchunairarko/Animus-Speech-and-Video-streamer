@@ -44,6 +44,7 @@ class AnimusRobot:
         self.head_angle_incrementer = 5
         self.head_angle_threshold = 90
         self.body_rotation_speed=3
+        self.prevNavKey='nullmotion'
         # self.getVideofeed()
         self.thread=threading.Thread(target=self.gen_frames)
 
@@ -297,7 +298,7 @@ def resetRobotHead():
 def frontenddata(data):
     if not (Robot.myrobot == None):
         key = str(data)
-        print(key)
+        
         # list_of_motions=[]
         # motorDict = Robot.utils.get_motor_dict()
         # list_of_motions = [motorDict.copy()]
@@ -348,7 +349,7 @@ def frontenddata(data):
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
             # sio.emit("sendHeadMovement","reset")
 
-        elif(key == 'nullmotion'):
+        elif(key == 'nullmotion' and Robot.prevNavKey!='nullmotion'):
             Robot.prev_motor_dict["body_forward"] = 0.0
             Robot.prev_motor_dict["body_sideways"] = 0.0
             Robot.prev_motor_dict["body_rotate"] = 0.0
@@ -379,7 +380,8 @@ def frontenddata(data):
             Robot.prev_motor_dict["body_sideways"] = -1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
             # sio.emit("sendHeadMovement","reset")
-
+        print(key)
+        Robot.prevNavKey=key
         # ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
 
         # for motion_counter in range(len(list_of_motions)):
