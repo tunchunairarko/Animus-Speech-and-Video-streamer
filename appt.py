@@ -118,55 +118,67 @@ class AnimusRobot:
             else:
                 break
     
-    def apply_mask(self,matrix, mask, fill_value):
-        masked = np.ma.array(matrix, mask=mask, fill_value=fill_value)
-        return masked.filled()
+    # def apply_mask(self,matrix, mask, fill_value):
+    #     masked = np.ma.array(matrix, mask=mask, fill_value=fill_value)
+    #     return masked.filled()
 
-    def apply_threshold(self,matrix, low_value, high_value):
-        low_mask = matrix < low_value
-        matrix = self.apply_mask(matrix, low_mask, low_value)
+    # def apply_threshold(self,matrix, low_value, high_value):
+    #     low_mask = matrix < low_value
+    #     matrix = self.apply_mask(matrix, low_mask, low_value)
 
-        high_mask = matrix > high_value
-        matrix = self.apply_mask(matrix, high_mask, high_value)
+    #     high_mask = matrix > high_value
+    #     matrix = self.apply_mask(matrix, high_mask, high_value)
 
-        return matrix
+    #     return matrix
 
-    def color_balance(self,img, percent):
-        assert img.shape[2] == 3
-        assert percent > 0 and percent < 100
+    # def color_balance(self,img, percent):
+    #     assert img.shape[2] == 3
+    #     assert percent > 0 and percent < 100
 
-        half_percent = percent / 200.0
+    #     half_percent = percent / 200.0
 
-        channels = cv2.split(img)
+    #     channels = cv2.split(img)
 
-        out_channels = []
-        for channel in channels:
-            assert len(channel.shape) == 2
-            # find the low and high precentile values (based on the input percentile)
-            height, width = channel.shape
-            vec_size = width * height
-            flat = channel.reshape(vec_size)
+    #     out_channels = []
+    #     for channel in channels:
+    #         assert len(channel.shape) == 2
+    #         # find the low and high precentile values (based on the input percentile)
+    #         height, width = channel.shape
+    #         vec_size = width * height
+    #         flat = channel.reshape(vec_size)
 
-            assert len(flat.shape) == 1
+    #         assert len(flat.shape) == 1
 
-            flat = np.sort(flat)
+    #         flat = np.sort(flat)
 
-            n_cols = flat.shape[0]
+    #         n_cols = flat.shape[0]
 
-            low_val  = flat[math.floor(n_cols * half_percent)]
-            high_val = flat[math.ceil( n_cols * (1.0 - half_percent))]
+    #         low_val  = flat[math.floor(n_cols * half_percent)]
+    #         high_val = flat[math.ceil( n_cols * (1.0 - half_percent))]
 
-            # print "Lowval: ", low_val
-            # print "Highval: ", high_val
+    #         # print "Lowval: ", low_val
+    #         # print "Highval: ", high_val
 
-            # saturate below the low percentile and above the high percentile
-            thresholded = self.apply_threshold(channel, low_val, high_val)
-            # scale the channel
-            normalized = cv2.normalize(thresholded, thresholded.copy(), 0, 255, cv2.NORM_MINMAX)
-            out_channels.append(normalized)
+    #         # saturate below the low percentile and above the high percentile
+    #         thresholded = self.apply_threshold(channel, low_val, high_val)
+    #         # scale the channel
+    #         normalized = cv2.normalize(thresholded, thresholded.copy(), 0, 255, cv2.NORM_MINMAX)
+    #         out_channels.append(normalized)
 
-        return cv2.merge(out_channels)
-            
+    #     return cv2.merge(out_channels)
+    def fixImage(self,img):
+        bgr = img[:,:,0:3]
+        # convert to HSV
+        hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+        h,s,v = cv2.split(hsv)
+        purple = 110
+        green = 25
+
+        diff_color = green - purple
+        hnew = np.mod(h + diff_color, 180).astype(np.uint8)
+        hsv_new = cv2.merge([hnew,s,v])
+        bgr_new = cv2.cvtColor(hsv_new, cv2.COLOR_HSV2BGR)
+        return bgr_new      
     def gen_frames(self):  # generate frame by frame from camera
         # if(self.prevTime==0):
         #     self.prevTime=datetime.datetime.now()
@@ -179,13 +191,8 @@ class AnimusRobot:
                 # image_list, err = self.myrobot.get_modality("vision", True)
                 # print(len(image_list))
                 if err.success:
-                    # sio.emit('pythondata', str(image_list[0].image))                      # send to server
-                    # clear_img=self.color_balance(image_list[0].image,1)
-                    clear_img=image_list[0].image
+                    clear_img=self.fixImage(image_list[0].image)
                     ret, buffer = cv2.imencode('.jpg', clear_img)
-                    # curTime=datetime.datetime.now()
-                    # sio.emit("ANIMUSFPS",str(curTime-self.prevTime))
-                    # self.prevTime=curTime
                     frame = buffer.tobytes()
                     yield (b'--frame\r\n'
                         b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
