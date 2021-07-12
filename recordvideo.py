@@ -45,8 +45,11 @@ class AnimusRobot:
         self.head_angle_threshold = 90
         self.body_rotation_speed=3
         self.prevNavKey='nullmotion'
+        self.videowriter= cv2.VideoWriter('vid'+str(int(time.time()))+'.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (640,480))
         # self.getVideofeed()
-        self.thread=threading.Thread(target=self.gen_frames)
+        self.recordThread=threading.Thread(target=self.writeVideo)
+        self.recordThread.start()
+        # self.thread=threading.Thread(target=self.gen_frames)
 
                 
     def openModalities(self):
@@ -180,36 +183,74 @@ class AnimusRobot:
         hsv_new = cv2.merge([hnew,s,v])
         bgr_new = cv2.cvtColor(hsv_new, cv2.COLOR_HSV2BGR)
         return bgr_new      
-    def gen_frames(self):  # generate frame by frame from camera
-        # if(self.prevTime==0):
-        #     self.prevTime=datetime.datetime.now()
+    def writeVideo(self):
         try:
             while True:
                 try:
                     image_list, err = self.myrobot.get_modality("vision", True)
                 except:
                     continue
-                # image_list, err = self.myrobot.get_modality("vision", True)
-                # print(len(image_list))
+                
                 if err.success:
-                    clear_img=self.fixImage(image_list[0].image)
-                    ret, buffer = cv2.imencode('.jpg', clear_img)
-                    # ret, buffer = cv2.imencode('.jpg', image_list[0].image)
-                    frame = buffer.tobytes()
-                    yield (b'--frame\r\n'
-                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
-            # frame = buffer.tobytes()
-
-            # self.videoImgSrc=b'--frame\r\n Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n'
-            # yield(self.videoImgSrc)
+                    try:
+                        clear_img=self.fixImage(image_list[0].image)
+                        self.videowriter.write(clear_img)
+                    except Exception as e:
+                        print(e)
+                    # ret, buffer = cv2.imencode('.jpg', clear_img)
+                    # frame = buffer.tobytes()
+                    # try:
+                    #     self.writeVideo
+                    # except Exception as e:
+                    #     print(e)
+                    #     pass
+                    # yield (b'--frame\r\n'
+                    #     b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
+            
         except KeyboardInterrupt:
             cv2.destroyAllWindows()
+            self.videowriterwriter.release()
             self.log.info("Closing down")
             self.myrobot.disconnect()
             animus.close_client_interface()
             sys.exit(-1)
         except SystemExit:
             cv2.destroyAllWindows()
+            self.videowriterwriter.release()
+            self.log.info("Closing down")
+            self.myrobot.disconnect()
+            animus.close_client_interface()
+            sys.exit(-1)
+    def gen_frames(self):  # generate frame by frame from camera
+        try:
+            while True:
+                try:
+                    image_list, err = self.myrobot.get_modality("vision", True)
+                except:
+                    continue
+                
+                if err.success:
+                    clear_img=self.fixImage(image_list[0].image)
+                    ret, buffer = cv2.imencode('.jpg', clear_img)
+                    frame = buffer.tobytes()
+                    # try:
+                    #     self.writeVideo
+                    # except Exception as e:
+                    #     print(e)
+                    #     pass
+                    yield (b'--frame\r\n'
+                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
+            
+        except KeyboardInterrupt:
+            cv2.destroyAllWindows()
+            self.videowriterwriter.release()
+            self.log.info("Closing down")
+            self.myrobot.disconnect()
+            animus.close_client_interface()
+            sys.exit(-1)
+        except SystemExit:
+            cv2.destroyAllWindows()
+            self.videowriterwriter.release()
             self.log.info("Closing down")
             self.myrobot.disconnect()
             animus.close_client_interface()
@@ -276,32 +317,6 @@ def resetRobotHead():
     Robot.prev_motor_dict["head_left_right"]=0
     Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
 
-    # if(Robot.prev_motor_dict['head_up_down']>0):
-    #     for i in range(abs(Robot.head_motion_counter['head_up_down'])):
-    #         Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] - 1
-    #         Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
-    #         ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-    #         time.sleep(0.02)
-    #     # Robot.prev_motor_dict['head_up_down']=0
-    # elif(Robot.prev_motor_dict['head_up_down']<0):
-    #     for i in range(abs(Robot.head_motion_counter['head_up_down'])):
-    #         Robot.head_motion_counter['head_up_down'] = Robot.head_motion_counter['head_up_down'] + 1
-    #         Robot.prev_motor_dict["head_up_down"] = Robot.head_motion_counter['head_up_down'] * Robot.utils.HEAD_UP
-    #         ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-    #         time.sleep(0.02)
-    # if(Robot.prev_motor_dict['head_left_right']>0):
-    #     for i in range(abs(Robot.head_motion_counter['head_left_right'])):
-    #         Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] - 1
-    #         Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
-    #         ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-    #         time.sleep(0.02)
-    #     # Robot.prev_motor_dict['head_up_down']=0
-    # elif(Robot.prev_motor_dict['head_left_right']<0):
-    #     for i in range(abs(Robot.head_motion_counter['head_left_right'])):
-    #         Robot.head_motion_counter['head_left_right'] = Robot.head_motion_counter['head_left_right'] + 1
-    #         Robot.prev_motor_dict["head_left_right"] = Robot.head_motion_counter['head_left_right'] * Robot.utils.HEAD_RIGHT
-    #         ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-    #         time.sleep(0.02)
 
 @sio.on('FROMNODEAPI')
 def frontenddata(data):
@@ -347,13 +362,13 @@ def frontenddata(data):
                 # sio.emit("sendHeadMovement","right")
 
         elif(key == 'rotate_left'):
-            resetRobotHead()
+            #resetRobotHead()
             Robot.prev_motor_dict["body_rotate"] = Robot.body_rotation_speed
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
             # sio.emit("sendHeadMovement","reset")
 
         elif(key == 'rotate_right'):
-            resetRobotHead()
+            #resetRobotHead()
             Robot.prev_motor_dict["body_rotate"] = -Robot.body_rotation_speed
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
             # sio.emit("sendHeadMovement","reset")
@@ -366,26 +381,26 @@ def frontenddata(data):
             # sio.emit("sendHeadMovement","reset")
 
         elif(key == 'forward'):
-            resetRobotHead()
+            #resetRobotHead()
             
             Robot.prev_motor_dict["body_forward"] = 1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
             # sio.emit("sendHeadMovement","reset")
 
         elif(key == 'left'):
-            resetRobotHead()
+            #resetRobotHead()
             Robot.prev_motor_dict["body_sideways"] = 1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
             # sio.emit("sendHeadMovement","reset")
         
         elif(key == 'back'):
-            resetRobotHead()
+            #resetRobotHead()
             Robot.prev_motor_dict["body_forward"] = -1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
             # sio.emit("sendHeadMovement","reset")
 
         elif(key == 'right'):
-            resetRobotHead()
+            #resetRobotHead()
             Robot.prev_motor_dict["body_sideways"] = -1.0
             ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
             # sio.emit("sendHeadMovement","reset")
