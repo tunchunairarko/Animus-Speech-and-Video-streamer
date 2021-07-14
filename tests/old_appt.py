@@ -30,7 +30,7 @@ class AnimusRobot:
     def __init__(self):
         self.log = utils.create_logger("MyAnimusApp", logging.INFO)
         self.myrobot = {}
-        self.videoImgSrc=''
+        self.capFrame=''
         self.getRobot()
         self.openModalities()
         self.utils = utils
@@ -45,8 +45,10 @@ class AnimusRobot:
         self.head_angle_threshold = 90
         self.body_rotation_speed=3
         self.prevNavKey='nullmotion'
+        self.vidThread = threading.Thread(target=self.retAnimusStream(), args=())
+        
         # self.getVideofeed()
-        self.thread=threading.Thread(target=self.gen_frames)
+        # self.thread=threading.Thread(target=self.gen_frames)
 
                 
     def openModalities(self):
@@ -54,7 +56,7 @@ class AnimusRobot:
         if not open_success:
             self.log.error("Could not open robot vision modality")
             # sys.exit(-1)
-
+        
         open_success = self.myrobot.open_modality("motor")
         if not open_success:
             self.log.error("Could not open robot motor modality")
@@ -117,72 +119,102 @@ class AnimusRobot:
                 continue
             else:
                 break
-    
-    
-    def fixImage(self,img):
-        bgr = img[:,:,0:3]
-        # convert to HSV
-        hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
-        h,s,v = cv2.split(hsv)
-        purple = 120
-        green = 25
-
-        diff_color = green - purple
-        hnew = np.mod(h + diff_color, 180).astype(np.uint8)
-        # snew = np.mod(s-2,180).astype(np.uint8)
-        hsv_new = cv2.merge([hnew,s,v])
-        bgr_new = cv2.cvtColor(hsv_new, cv2.COLOR_HSV2BGR)
-        return bgr_new      
+    def retAnimusStream(self):
+        while True:
+            try:
+                image_list, err = self.myrobot.get_modality("vision", True)
+                if err.success:
+                    self.capFrame=image_list[0].image
+                time.sleep(0.033)
+            except:
+                continue
     def gen_frames(self):  # generate frame by frame from camera
         try:
-            while True:
-                
-                try:
-                    image_list, err = self.myrobot.get_modality("vision", True)
-                except:
-                    continue
-
-                if err.success:
-                    # clear_img=self.fixImage(image_list[0].image)
-                    # ret, buffer = cv2.imencode('.jpg', clear_img)
-                    # # ret, buffer = cv2.imencode('.jpg', image_list[0].image)
-                    # frame = buffer.tobytes()
-                    frame=simplejpeg.encode_jpeg(image_list[0].image,colorspace='BGR',quality=90)
-                    yield (b'--frame\r\n'
-                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
-                    # print("frame")
-                    time.sleep(0.01)
-                
-            # frame = buffer.tobytes()
-
-            # self.videoImgSrc=b'--frame\r\n Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n'
+            frame=simplejpeg.encode_jpeg(self.capFrame,colorspace='BGR',quality=90)
+            yield (b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
             # yield(self.videoImgSrc)
         except KeyboardInterrupt:
-            # cv2.destroyAllWindows()
+            cv2.destroyAllWindows()
             self.log.info("Closing down")
-            # self.myrobot.disconnect()
-            # animus.close_client_interface()
-            # sys.exit(-1)
+            self.vidThread.join()
+            self.myrobot.disconnect()
+            animus.close_client_interface()
+            sys.exit(-1)
         except SystemExit:
-            # cv2.destroyAllWindows()
+            cv2.destroyAllWindows()
             self.log.info("Closing down")
-            # self.myrobot.disconnect()
-            # animus.close_client_interface()
-            # sys.exit(-1)
+            self.vidThread.join()
+            self.myrobot.disconnect()
+            animus.close_client_interface()
+            sys.exit(-1)
+    # def fixImage(self,img):
+    #     bgr = img[:,:,0:3]
+    #     # convert to HSV
+    #     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    #     h,s,v = cv2.split(hsv)
+    #     purple = 120
+    #     green = 25
+
+    #     diff_color = green - purple
+    #     hnew = np.mod(h + diff_color, 180).astype(np.uint8)
+    #     # snew = np.mod(s-2,180).astype(np.uint8)
+    #     hsv_new = cv2.merge([hnew,s,v])
+    #     bgr_new = cv2.cvtColor(hsv_new, cv2.COLOR_HSV2BGR)
+    #     return bgr_new      
+    # def gen_frames(self):  # generate frame by frame from camera
+    #     try:
+    #         while True:
+    #             try:
+    #                 image_list, err = self.myrobot.get_modality("vision", True)
+    #             except:
+    #                 continue
+
+    #             if err.success:
+    #                 # clear_img=self.fixImage(image_list[0].image)
+    #                 # ret, buffer = cv2.imencode('.jpg', clear_img)
+    #                 # # ret, buffer = cv2.imencode('.jpg', image_list[0].image)
+    #                 # frame = buffer.tobytes()
+    #                 frame=simplejpeg.encode_jpeg(image_list[0].image,colorspace='BGR')
+    #                 yield (b'--frame\r\n'
+    #                     b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
+    #         # frame = buffer.tobytes()
+
+    #         # self.videoImgSrc=b'--frame\r\n Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n'
+    #         # yield(self.videoImgSrc)
+    #     except KeyboardInterrupt:
+    #         cv2.destroyAllWindows()
+    #         self.log.info("Closing down")
+    #         self.myrobot.disconnect()
+    #         animus.close_client_interface()
+    #         sys.exit(-1)
+    #     except SystemExit:
+    #         cv2.destroyAllWindows()
+    #         self.log.info("Closing down")
+    #         self.myrobot.disconnect()
+    #         animus.close_client_interface()
+    #         sys.exit(-1)
                 
-    def closeRobot(self,user):
+    def closeRobot(self):
         # self.myrobot.disconnect()
         # animus.close_client_interface()
-        print(user)
         cv2.destroyAllWindows()
         self.log.info("Closing down")
+        self.vidThread.join()
         self.myrobot.disconnect()
         animus.close_client_interface()
         sys.exit(-1)
+    
+
 
 
 Robot=AnimusRobot()
-atexit.register(Robot.closeRobot, user='Reiner Braun')
+Robot.vidThread.start()
+# atexit.register(Robot.closeRobot, user='Reiner Braun')
+
+# def OnExitApp(user):
+#     print(user, " exit Python application")
+#     Robot.closeRobot()
 
 @app.route('/',methods=['POST','GET'])
 def index():
@@ -233,8 +265,8 @@ def disconnect():
     print('disconnected from server')
 
 def resetRobotHead():
-    # Robot.prev_motor_dict["head_up_down"]=0
-    # Robot.head_motion_counter['head_up_down']=0
+    Robot.prev_motor_dict["head_up_down"]=0
+    Robot.head_motion_counter['head_up_down']=0
     Robot.head_motion_counter['head_left_right']=0
     Robot.prev_motor_dict["head_left_right"]=0
     Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
@@ -354,11 +386,11 @@ def frontenddata(data):
             # sio.emit("sendHeadMovement","reset")
         print(key)
         Robot.prevNavKey=key
-        time.sleep(0.002)
         # ret = Robot.myrobot.set_modality("motor", list(Robot.prev_motor_dict.values()))
-        
+
         # for motion_counter in range(len(list_of_motions)):
         #     ret = Robot.myrobot.set_modality("motor", list(list_of_motions[motion_counter].values()))
+        time.sleep(0.01)
 @sio.on('FROMNODESPEECHAPI')
 def frontendspeechdata(data):
     if not (Robot.myrobot == None):
