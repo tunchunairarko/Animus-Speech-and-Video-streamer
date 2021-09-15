@@ -106,7 +106,7 @@ class AnimusRobot:
                 time.sleep(5)
                 continue
 
-            chosen_robot_details = get_robots_result.robots[0]
+            chosen_robot_details = get_robots_result.robots[1]
 
             self.myrobot = animus.Robot(chosen_robot_details)
             connected_result = self.myrobot.connect()
@@ -147,11 +147,11 @@ class AnimusRobot:
                     # ret, buffer = cv2.imencode('.jpg', clear_img)
                     # # ret, buffer = cv2.imencode('.jpg', image_list[0].image)
                     # frame = buffer.tobytes()
-                    frame=simplejpeg.encode_jpeg(image_list[0].image,colorspace='BGR',quality=90)
+                    frame=simplejpeg.encode_jpeg(image_list[0].image,colorspace='BGR')
                     yield (b'--frame\r\n'
                         b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
                     # print("frame")
-                    time.sleep(0.01)
+                    time.sleep(0.001)
                 
             # frame = buffer.tobytes()
 
